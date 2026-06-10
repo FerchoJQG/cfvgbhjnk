@@ -1,6 +1,5 @@
-Aquí tienes el documento completo estructurado en formato Markdown (`.md`), listo para ser copiado, exportado o transformado en la documentación oficial de tu grupo. Se eliminó por completo la bitácora y los checklists, añadiendo la portada formal, objetivos, asignaciones individuales detalladas con sus respectivas tareas y las conclusiones del proyecto.
 
-```markdown
+
 # 🎯 Guía Oficial y Documentación del Proyecto Final — SIS313
 ## Proyecto 17: Infraestructura de Noticias con CDN Simulado
 > **Universidad Mayor, Real y Pontificia de San Francisco Xavier de Chuquisaca** > **Facultad de Tecnología / Carrera de Ingeniería de Sistemas** > **Docente:** Ing. Marcelo Quispe Ortega  
@@ -177,4 +176,3 @@ ls -lh /opt/admin/backups/
 
 ```
 
-```
