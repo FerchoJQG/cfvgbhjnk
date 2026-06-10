@@ -20,18 +20,6 @@
 
 ---
 
-## ⚠️ Entregables Obligatorios en eCampus (antes de las 09:00)
-
-> Sin estos 3 documentos subidos **= 0 puntos en el parcial.**
-
-| # | Documento | Páginas | Estado |
-|---|-----------|:-------:|:------:|
-| 1 | Tabla de infraestructura actualizada | 1 | ☐ |
-| 2 | Bitácora de avance (mínimo 3 entradas) | 1 | ☐ |
-| 3 | Diagrama de arquitectura con leyenda de estado | 1 | ☐ |
-
----
-
 ## 📋 Tabla de Infraestructura
 
 > Entregar impresa o en PDF al docente al inicio de la presentación.
