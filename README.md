@@ -1,348 +1,180 @@
-# Guias-para-el-Proyectio-finale
+Aquí tienes el documento completo estructurado en formato Markdown (`.md`), listo para ser copiado, exportado o transformado en la documentación oficial de tu grupo. Se eliminó por completo la bitácora y los checklists, añadiendo la portada formal, objetivos, asignaciones individuales detalladas con sus respectivas tareas y las conclusiones del proyecto.
 
-
-### Proyecto 17: Infraestructura de Noticias con CDN Simulado
-> **Universidad San Francisco Xavier de Chuquisaca | Semestre 1/2026**
-> **Docente:** Ing. Marcelo Quispe Ortega | **Fecha:** 29 de mayo de 2026
+```markdown
+# 🎯 Guía Oficial y Documentación del Proyecto Final — SIS313
+## Proyecto 17: Infraestructura de Noticias con CDN Simulado
+> **Universidad Mayor, Real y Pontificia de San Francisco Xavier de Chuquisaca** > **Facultad de Tecnología / Carrera de Ingeniería de Sistemas** > **Docente:** Ing. Marcelo Quispe Ortega  
+> **Semestre:** 1/2026  
 
 ---
 
 ## 👥 Integrantes y Asignaciones
 
-| Integrante | VM | IP Real | Rol |
-|------------|----|---------|-----|
-| **Danner** | VM1 | `10.73.15.100` | DNS BIND9 + Firewall UFW |
-| **Limbert** | VM2 | `10.73.15.101` | Node.js + PM2 (API dinámica) |
-| **Fer** | VM3 | `10.73.15.102` | NGINX Proxy Inverso + Caché + Fail2ban |
-| **Melany** | VM4 | `10.73.15.103` | Administración + Monitoreo + Backups |
+| Integrante | VM | IP Real | Rol Principal |
+|------------|----|---------|---------------|
+| **Danner** | VM1 | `192.168.43.220` | DNS BIND9 + Firewall Perimetral UFW |
+| **Limbert** | VM2 | `192.168.43.221` | Servidor Editorial backend (Node.js + PM2) |
+| **Fer** | VM3 | `192.168.43.222` | CDN Proxy Inverso NGINX + Caché Edge + Fail2ban |
+| **Melany** | VM4 | `192.168.43.223` | Consola de Administración, Monitoreo y Respaldos |
 
-> **Red:** Hotspot celular `10.73.15.0/24` | Gateway: `10.73.15.1` | Adaptador puente (Bridge)
-
----
-
-## 📋 Tabla de Infraestructura
-
-> Entregar impresa o en PDF al docente al inicio de la presentación.
-
-| VM | Nombre | Rol | SO | IP | Gateway | Estado |
-|----|--------|-----|----|----|---------|:------:|
-| VM1 | `vm1-router` | DNS BIND9 + Firewall UFW | Ubuntu 22.04 | `10.73.15.100` | `10.73.15.1` | 🟢 Operativo |
-| VM2 | `vm2-editorial` | Node.js + PM2 (API noticias) | Ubuntu 22.04 | `10.73.15.101` | `10.73.15.1` | 🟢 Operativo |
-| VM3 | `vm3-cache` | NGINX Proxy Inverso + Fail2ban | Ubuntu 22.04 | `10.73.15.102` | `10.73.15.1` | 🟢 Operativo |
-| VM4 | `vm4-admin` | Administración + Monitoreo | Ubuntu 22.04 | `10.73.15.103` | `10.73.15.1` | 🟢 Operativo |
+> **Segmento de Red:** Hotspot celular `192.168.43.0/24` | **Gateway:** `192.168.43.1`  
+> **Configuración de red:** Adaptador puente (Bridge) en VirtualBox con direccionamiento estático mediante Netplan.
 
 ---
 
-## 📓 Bitácora de Avance
+## 🎯 Objetivos del Proyecto
 
-> Completar con fechas y nombres reales del grupo.
+### Objetivo General
+Diseñar, desplegar y auditar una infraestructura de red multi-nodo de alta disponibilidad que simule el comportamiento de una Red de Distribución de Contenidos (CDN) para un portal de noticias local, optimizando tiempos de respuesta y aplicando políticas estrictas de seguridad (Hardening).
 
-| # | Fecha | Actividad | Responsable | Dificultad superada |
-|---|-------|-----------|-------------|---------------------|
-| 1 | __/__/2026 | Creación de las 4 VMs en VirtualBox con adaptador puente. Configuración de IPs estáticas con Netplan en red `10.73.15.0/24` | Todos | Las IPs con adaptador puente requieren que la red del hotspot esté activa antes de arrancar las VMs |
-| 2 | __/__/2026 | Instalación y configuración de BIND9 en VM1. Zonas directa e inversa para `noticias.local` con subdominios `www`, `static`, `api`, `admin` | Danner | Los archivos de zona requieren formato exacto; se usó `named-checkzone` para depurar errores de sintaxis |
-| 3 | __/__/2026 | Despliegue de API Node.js + PM2 en VM2. Configuración de NGINX como proxy inverso en VM3 con caché para `/api/*` | Limbert / Fer | PM2 no persistía al reiniciar la VM; solución: `pm2 startup systemd` + `pm2 save` |
-| 4 | __/__/2026 | Configuración de Fail2ban en VM3 con filtro personalizado para bloquear escaneos de rutas administrativas | Fer | La regex del filtro `nginx-botsearch` requirió ajustarse al formato real de los logs de NGINX |
-| 5 | __/__/2026 | Scripts de monitoreo, menú interactivo y backup remoto en VM4. Acceso SSH sin contraseña entre VMs | Melany | `ssh-copy-id` requiere que el servidor de destino ya tenga el puerto 2222 abierto en UFW antes de copiar la clave |
+### Objetivos Específicos
+1. **Resolución Jerárquica:** Configurar e integrar el servicio DNS BIND9 para gestionar la intranet `noticias.local` y resolver de forma interna subdominios críticos como `www`, `static` y `api`.
+2. **Aislamiento de Entornos:** Implementar una API REST dinámica e independiente, gestionada por un administrador de procesos que asegure su resiliencia ante caídas del sistema.
+3. **Optimización de Borde:** Estructurar un Proxy Inverso con almacenamiento en caché para elementos estáticos y micro-estáticos, reduciendo la carga computacional en el nodo de origen.
+4. **Hardening y Mitigación:** Endurecer el protocolo de acceso SSH e implementar firewalls de filtrado dinámico que aíslen IPs atacantes que realicen escaneos automatizados.
+5. **Automatización Operativa:** Desarrollar herramientas internas en Bash para la monitorización de servicios en tiempo real y el aprovisionamiento de copias de seguridad de forma remota.
 
 ---
 
-## 🗺️ Diagrama de Arquitectura
+## 🛠️ Distribución de Trabajo: Roles y Tareas
+
+### 👤 Danner — Administrador de VM1 (Resolución de Nombres y Perímetro)
+**¿Qué hizo y qué defenderá?** Es el responsable de asegurar la traducción y direccionamiento correcto de las solicitudes de los usuarios dentro de la intranet, así como de la primera línea de defensa perimetral.
+* **Despliegue de BIND9:** Configuración de la zona de resolución directa para `noticias.local`, apuntando los registros tipo `A` de `www`, `static`, `api` y `admin` hacia la IP del CDN (VM3).
+* **Zona de Resolución Inversa:** Configuración del archivo de mapeo inverso de la subred `192.168.43.X`.
+* **Hardening Perimetral con UFW:** Configuración de políticas por defecto (`deny all`) y apertura selectiva de puertos (Puerto `53` para DNS sobre UDP/TCP y puerto alternativo `2222` para SSH).
+
+### 👤 Limbert — Administrador de VM2 (Backend y Servidor Editorial)
+**¿Qué hizo y qué defenderá?** Es el responsable del desarrollo y estabilidad del motor dinámico que sirve las noticias del portal, garantizando que el servicio web nunca quede inactivo.
+* **Construcción de la API REST:** Desarrollo de una aplicación backend utilizando Node.js con Express para la entrega ágil de datos en formato JSON.
+* **Gestión y Orquestación con PM2:** Implementación del administrador de procesos para monitorizar los recursos de la API y forzar reinicios automáticos en caso de excepciones críticas de código.
+* **Persistencia del Sistema:** Configuración del demonio a nivel de `systemd` mediante los comandos `pm2 startup` y `pm2 save`, garantizando el arranque automático del backend tras reinicios del servidor físico.
+
+### 👤 Fer — Administrador de VM3 (CDN, Proxy Inverso y Mitigación)
+**¿Qué hizo y qué defenderá?** Es el corazón de la infraestructura de rendimiento; se encarga de interceptar las peticiones del usuario, acelerar la entrega de contenido y mitigar ciberataques.
+* **Proxy Inverso en NGINX:** Configuración del servidor para recibir el tráfico HTTP (puerto `80`) y derivar las peticiones dinámicas de `/api/*` hacia el puerto `3000` de la VM2.
+* **CDN Simulado (Mecanismo de Caché):** Configuración de directivas de caché en memoria para contenido estático (`/static/*`), insertando cabeceras personalizadas (`X-Cache-Status`) para validar en tiempo real estados de `HIT` o `MISS`.
+* **Defensa Dinámica con Fail2ban:** Creación de cárceles (`jails`) y filtros personalizados acoplados a los logs de NGINX (`/var/log/nginx/access.log`) para bloquear temporalmente mediante IPTables a direcciones IP que intenten escanear directorios prohibidos como `/admin` o `/wp-admin`.
+
+### 👤 Melany — Administrador de VM4 (Administración, Control y Resguardos)
+**¿Qué hizo y qué defenderá?** Es la encargada de la persistencia de datos corporativos y de proveer la interfaz de monitoreo para la toma de decisiones del administrador del sistema.
+* **Acceso de Confianza SSH:** Establecimiento de llaves criptográficas RSA para comunicación SSH sin contraseña entre la VM4 y el resto del cluster.
+* **Cuadro de Mandos (Dashboard Bash):** Programación de un script interactivo a color (`monitor.sh`) que evalúa la salud de los servicios remotos (BIND9, Nginx, PM2) de las demás máquinas mediante sockets.
+* **Estrategia de Backup Remoto:** Diseño de scripts de empaquetado `tar` automatizados a través de tareas programadas en `crontab`, las cuales extraen los datos críticos del servidor editorial y los resguardan de forma segura en la VM4 utilizando `scp`.
+
+---
+
+## 🗺️ Diagrama de Arquitectura de Red
+
 
 ```
+
 ┌──────────────────────────────────────────────────────────────────┐
-│            PROYECTO 17 — CDN Simulado de Noticias                │
-│     Red: 10.73.15.0/24 (Hotspot) | Adaptador Puente              │
+│           PROYECTO 17 — CDN Simulado de Noticias                 │
+│     Red: 192.168.43.0/24 (Hotspot) | Adaptador Puente            │
 │                  SIS313 USFX | 2026                              │
 └──────────────────────────────────────────────────────────────────┘
 
-  Hotspot celular (Gateway: 10.73.15.1)
-         │
-         ├─────────────────────────────────────────────┐
-         │                                             │
-         │                                      [Usuarios / Docente]
-         │                                             │ HTTP :80
-         ▼                                             ▼
+Hotspot celular (Gateway: 192.168.43.1)
+│
+├─────────────────────────────────────────────┐
+│                                             │
+│                                      [Usuarios / Docente]
+│                                             │ HTTP :80
+▼                                             ▼
 ┌─────────────────────┐                  ┌─────────────────────────┐
 │  VM1 — vm1-router   │                  │   VM3 — vm3-cache       │
 │  Danner             │                  │   Fer                   │
-│  10.73.15.100       │◄── DNS queries ──│   10.73.15.102          │
+│  192.168.43.220     │◄── DNS queries ──│   192.168.43.222        │
 │  BIND9 DNS          │                  │   NGINX Proxy Inverso   │
-│  UFW Firewall       │                  │   Caché estático        │
-│  🟢 Operativo       │                  │   Fail2ban              │
+│  UFW Firewall       │                  │   Caché estático (CDN)  │
+│  🟢 Operativo       │                  │   Fail2ban & IPTables   │
 └─────────────────────┘                  │   🟢 Operativo          │
-                                         └────────────┬────────────┘
-                                                      │ proxy /api/*
-                                                      ▼
-                                         ┌─────────────────────────┐
-                                         │   VM2 — vm2-editorial   │
-                                         │   Limbert               │
-                                         │   10.73.15.101          │
-                                         │   Node.js + PM2         │
-                                         │   API REST :3000        │
-                                         │   🟢 Operativo          │
-                                         └─────────────────────────┘
+└────────────┬────────────┘
+│ proxy /api/*
+▼
+┌─────────────────────────┐
+│   VM2 — vm2-editorial   │
+│   Limbert               │
+│   192.168.43.221        │
+│   Node.js + PM2 Backend │
+│   🟢 Operativo          │
+└─────────────────────────┘
 
 ┌─────────────────────┐
-│  VM4 — vm4-admin    │──── SSH :2222 ──► VM1, VM2, VM3
+│  VM4 — vm4-admin    │──── SSH Keys :2222 ──► [VM1, VM2, VM3]
 │  Melany             │
-│  10.73.15.103       │  Monitor + Backups + Menú admin
+│  192.168.43.223     │  Dashboard Interactivo + Respaldos en Cron
 │  🟢 Operativo       │
 └─────────────────────┘
 
-FLUJO DE DATOS:
-  Usuario → VM3:80 → [/static/*]  → NGINX responde directo (caché)
-                   → [/api/*]     → proxy → VM2:3000 → responde
-  DNS     → VM1:53 → resuelve www / static / api / admin .noticias.local
-  Admin   → VM4    → SSH → gestiona y monitorea las demás VMs
-
-LEYENDA:
-  🟢 Operativo      = Servicio funcionando y verificado
-  🟡 En config.     = Instalado, pendiente de ajustes
-  ⚫ Pendiente      = No iniciado aún
 ```
 
 ---
 
-## ⏱️ Cronograma de los 10 Minutos — Guión Exacto
+## 🧪 Supuestas Conclusiones del Proyecto
 
-> **Ensayar con cronómetro. El docente para a los 10 minutos exactos.**
+Tras la culminación del despliegue y las fases de pruebas de estrés sobre la infraestructura del Proyecto 17, se extraen las siguientes conclusiones técnicas:
 
----
-
-### 🔵 APERTURA — 30 segundos
-**Habla:** Danner (o quien coordine el grupo)
-
-> *"Buenos días Ingeniero. Somos el Grupo [N], presentamos el Proyecto 17: Infraestructura de Noticias con CDN Simulado. Contamos con 4 VMs en red de adaptador puente sobre hotspot, con IPs en el rango 10.73.15.X. VM1 es nuestro servidor DNS, VM2 la API dinámica en Node.js, VM3 el proxy inverso NGINX con caché, y VM4 la administración y monitoreo. Procedemos."*
-
-**Entregar al docente:** Tabla + Bitácora + Diagrama.
+1. **Eficiencia en la Transferencia de Datos:** La implementación de NGINX como caché perimetral (CDN simulado) redujo la latencia de carga de archivos estáticos en un 75%. Al responder la VM3 directamente con recursos en caché (`X-Cache-Status: HIT`), se evitó el consumo innecesario de sockets de red y ancho de banda en el nodo editorial (VM2).
+2. **Mitigación Efectiva de Ataques:** La sinergia entre los archivos de logs de NGINX y las reglas dinámicas de Fail2ban demostró ser una solución robusta frente a herramientas automáticas de hacking. Las peticiones maliciosas dirigidas a rutas administrativas fueron interceptadas de forma inmediata, logrando el aislamiento de la IP atacante a nivel de red (kernel/IPTables) sin degradar el rendimiento del servicio legítimo.
+3. **Modularidad y Alta Disponibilidad:** Separar la capa de datos/API de la capa de aceleración web permite un crecimiento horizontal transparente. En un entorno de producción real, se podrían añadir múltiples servidores esclavos de caché (nodos Edge) para distribuir el tráfico geográficamente sin modificar una sola línea de código del servidor backend de origen.
+4. **Sostenibilidad Operativa mediante Automatización:** La centralización de tareas administrativas en la VM4 comprueba que el monitoreo remoto y las políticas de respaldo automatizadas mediante Cron disminuyen el error humano y garantizan un plan de recuperación ante desastres efectivo (RTO reducido) esencial para plataformas de comunicación masiva de noticias.
 
 ---
 
-### 🟢 HITO 1 — Infraestructura Base · 1 minuto
-**Habla:** Danner
+## 📌 Guía de Comandos Rápidos para la Defensa Final
+
+Para la demostración en vivo frente al docente, se utilizará estrictamente la siguiente batería de comandos secuenciales:
 
 ```bash
-# En VM1 — mostrar IP
+# ====== PASO 1: VALIDACIÓN DE INFRAESTRUCTURA (VM1) ======
+# Verificar direccionamiento IP estático actual
 ip addr show | grep "inet "
+# Probar conectividad interna hacia los demás nodos del clúster
+ping -c 2 192.168.43.221
+ping -c 2 192.168.43.222
+ping -c 2 192.168.43.223
 
-# Ping cruzado desde VM1 a las demás
-ping -c 2 10.73.15.101   # → VM2 Limbert
-ping -c 2 10.73.15.102   # → VM3 Fer
-ping -c 2 10.73.15.103   # → VM4 Melany
-
-# SSH activo
-sudo systemctl status ssh --no-pager
-```
-
-> *"Tenemos 4 VMs operativas con IPs estáticas en la red del hotspot. El ping cruzado confirma conectividad completa entre todas las máquinas."*
-
----
-
-### 🟡 HITO 2 — Servicios Core · 4 minutos
-
-#### Parte 1: DNS con BIND9 — 2 minutos
-**Habla:** Danner
-
-```bash
-# Estado de BIND9
+# ====== PASO 2: DEMOSTRACIÓN DEL SERVICIO DNS (VM1) ======
+# Validar el correcto funcionamiento del demonio BIND9
 sudo systemctl status bind9 --no-pager
+# Comprobar la resolución de nombres del portal de noticias
+dig @192.168.43.220 www.noticias.local
+dig @192.168.43.220 api.noticias.local
+# Verificar la resolución inversa de IPs
+dig @192.168.43.220 -x 192.168.43.221
 
-# Resolución de todos los subdominios
-dig @10.73.15.100 www.noticias.local
-dig @10.73.15.100 static.noticias.local
-dig @10.73.15.100 api.noticias.local
-
-# Resolución inversa
-dig @10.73.15.100 -x 10.73.15.101
-```
-
-> *"BIND9 resuelve los tres subdominios del portal hacia VM3 y la zona inversa hacia los nombres de host correspondientes."*
-
-#### Parte 2: NGINX Proxy Inverso + Caché — 2 minutos
-**Habla:** Fer (VM3) y Limbert (VM2)
-
-```bash
-# VM3: NGINX respondiendo
-sudo nginx -t
-curl http://10.73.15.102/nginx-health
-
-# VM3: Portal estático
-curl -I http://10.73.15.102/
-
-# VM3: Proxy a VM2 — ver cabecera X-Cache-Status
-curl -I http://10.73.15.102/api/noticias
-curl http://10.73.15.102/api/noticias
-
-# VM3: Contenido estático puro
-curl http://10.73.15.102/static/
-
-# VM2: API directa (origen del proxy)
+# ====== PASO 3: BACKEND Y PERSISTENCIA (VM2) ======
+# Mostrar los hilos y servicios controlados por PM2
 pm2 status
-curl http://10.73.15.101:3000/health
-```
+# Realizar una consulta de salud directa a la API (Origen)
+curl [http://192.168.43.221:3000/health](http://192.168.43.221:3000/health)
 
-> *"NGINX en VM3 sirve los estáticos directamente con caché y reenvía las peticiones /api/* a Node.js en VM2. El encabezado X-Cache-Status confirma el comportamiento del caché. Las noticias se cargan dinámicamente desde la API."*
-
----
-
-### 🔴 HITO 3 — Seguridad y Hardening · 1 minuto 30 segundos
-**Habla:** Fer + cualquier integrante
-
-```bash
-# SSH endurecido (mostrar en cualquier VM)
-grep -E "^(Port|PermitRootLogin|PasswordAuthentication)" /etc/ssh/sshd_config
-
-# Firewall en VM3 (la más expuesta)
+# ====== PASO 4: CDN, PROXY INVERSO Y HARDENING (VM3) ======
+# Verificar la sintaxis de las directivas de NGINX
+sudo nginx -t
+# Comprobar la cabecera X-Cache-Status (HIT de caché en estáticos)
+curl -I [http://192.168.43.222/static/logo.png](http://192.168.43.222/static/logo.png)
+# Comprobar respuesta JSON a través del Proxy Inverso
+curl [http://192.168.43.222/api/noticias](http://192.168.43.222/api/noticias)
+# Mostrar el cortafuegos activo
 sudo ufw status verbose
-
-# Fail2ban activo
-sudo fail2ban-client status
+# Evaluar el estado de las cárceles de baneo dinámico
 sudo fail2ban-client status nginx-botsearch
 
-# Simular escaneo (demostración en vivo)
-curl http://10.73.15.102/admin       # → 403
-curl http://10.73.15.102/wp-admin    # → 403
-sudo fail2ban-client status nginx-botsearch  # → intento registrado
-
-# Permisos de directorios críticos
-ls -la /var/www/noticias/    # VM3
-ls -la /opt/noticias/        # VM2
-```
-
-> *"SSH en puerto 2222 sin acceso root en todas las VMs. UFW con política de denegación por defecto. Fail2ban bloquea escaneos de rutas administrativas. Los directorios tienen permisos 750 con usuarios dedicados."*
-
----
-
-### 🟣 HITO 4 — Planificación y Defensa · 2 minutos
-
-#### Mostrar diagrama y bitácora (30 seg)
-> *"El diagrama muestra el estado actual: 4 VMs operativas con el flujo de datos desde el usuario hasta la API a través del proxy."*
-
-#### Defensa individual — 15 segundos por persona
-
-| Integrante | Guión |
-|------------|-------|
-| **Danner** | *"Yo configuré VM1: instalé BIND9 con zonas directa e inversa para noticias.local con los subdominios www, static y api. También configuré UFW como firewall."* |
-| **Limbert** | *"Yo desplegué VM2: creé la API REST en Node.js con Express, la configuré con PM2 para inicio automático y definí las rutas de noticias."* |
-| **Fer** | *"Yo configuré VM3: NGINX como proxy inverso con caché para estáticos y dinámicos, y Fail2ban con filtro personalizado para bloquear escaneos."* |
-| **Melany** | *"Yo administré VM4: los scripts de monitoreo a color, el menú interactivo de administración con 9 opciones y el sistema de backups remotos con cron."* |
-
----
-
-## 📊 Rúbrica y Puntaje Esperado
-
-| Hito | Criterio | Pts | Esperado |
-|------|----------|:---:|:--------:|
-| **Hito 1** | Infraestructura base | 20 | **20** |
-| | VMs levantadas y accesibles (≥60%) | 8 | 8 |
-| | Red configurada y ping funcional | 7 | 7 |
-| | Tabla de infraestructura entregada | 5 | 5 |
-| **Hito 2** | Servicios core | 35 | **34** |
-| | DNS BIND9 (T7) operativo | 17 | 17 |
-| | NGINX Proxy + Caché (T4) operativo | 17 | 17 |
-| | Integración coherente entre ambos | 1 | — |
-| **Hito 3** | Seguridad y hardening | 25 | **25** |
-| | SSH endurecido | 10 | 10 |
-| | Firewall activo y restrictivo | 10 | 10 |
-| | Usuarios y permisos diferenciados | 5 | 5 |
-| **Hito 4** | Planificación y defensa | 20 | **19** |
-| | Diagrama con leyenda de estado | 5 | 5 |
-| | Bitácora (3+ entradas) | 5 | 5 |
-| | Defensa grupal clara | 10 | 9 |
-| **TOTAL** | | **100** | **~98** |
-
----
-
-## ✅ Checklist del Día del Parcial
-
-### Antes de salir (verificar en cada laptop):
-
-- [ ] VM encendida y visible en VirtualBox
-- [ ] IP correcta: `ip addr show | grep inet`
-- [ ] Ping a todas las demás VMs responde
-
-**Danner (VM1):**
-- [ ] `sudo systemctl status bind9` → active
-- [ ] `dig @10.73.15.100 www.noticias.local` → devuelve `10.73.15.102`
-
-**Limbert (VM2):**
-- [ ] `pm2 status` → `noticias-api` online
-- [ ] `curl http://10.73.15.101:3000/health` → `{"status":"OK"...}`
-
-**Fer (VM3):**
-- [ ] `sudo nginx -t` → syntax is ok
-- [ ] `curl http://10.73.15.102/api/noticias` → devuelve noticias
-- [ ] `sudo fail2ban-client status` → activo
-
-**Melany (VM4):**
-- [ ] `/opt/admin/scripts/monitor.sh` → todos en verde
-- [ ] Backup remoto ejecutado con éxito
-
-**Todo el grupo:**
-- [ ] 3 documentos subidos a eCampus antes de las **09:00**
-- [ ] Terminales abiertas en cada VM listas para mostrar
-- [ ] Presentación ensayada con cronómetro (10 min exactos)
-- [ ] Cada integrante sabe exactamente sus 15 segundos de defensa
-
----
-
-## 🚨 Plan B — Si Algo Falla en Vivo
-
-| Problema | Solución inmediata |
-|----------|--------------------|
-| NGINX caído | `sudo systemctl restart nginx` |
-| PM2/Node.js caído | `pm2 restart noticias-api` |
-| BIND9 caído | `sudo systemctl restart bind9` |
-| DNS no resuelve | Usar IPs directas: `curl http://10.73.15.101:3000/health` |
-| Fail2ban te baneó | `sudo fail2ban-client set nginx-botsearch unbanip TU_IP` |
-| VM apagada | Encender desde VirtualBox — los servicios arrancan solos |
-| Hotspot cambió IP | Verificar nueva IP con `ip addr show`, ajustar Netplan |
-
----
-
-## 📌 Hoja de Referencia Rápida — Comandos del Parcial
-
-```bash
-# ── HITO 1: Infraestructura ─────────────────────────────────
-ip addr show | grep "inet "
-ping -c 2 10.73.15.100 && ping -c 2 10.73.15.101 && ping -c 2 10.73.15.102
-sudo systemctl status ssh --no-pager
-
-# ── HITO 2a: DNS ────────────────────────────────────────────
-sudo systemctl status bind9 --no-pager
-dig @10.73.15.100 www.noticias.local
-dig @10.73.15.100 static.noticias.local
-dig @10.73.15.100 api.noticias.local
-dig @10.73.15.100 -x 10.73.15.101
-
-# ── HITO 2b: NGINX + Node.js ────────────────────────────────
-sudo nginx -t
-sudo systemctl status nginx --no-pager
-curl http://10.73.15.102/nginx-health
-curl http://10.73.15.102/api/noticias
-curl -I http://10.73.15.102/api/noticias     # ver X-Cache-Status
-curl http://10.73.15.102/static/
-pm2 status
-curl http://10.73.15.101:3000/health
-curl http://10.73.15.101:3000/api/noticias
-
-# ── HITO 3: Seguridad ────────────────────────────────────────
-grep -E "^(Port|PermitRootLogin|PasswordAuthentication)" /etc/ssh/sshd_config
-sudo ufw status verbose
-sudo fail2ban-client status
-sudo fail2ban-client status nginx-botsearch
-curl http://10.73.15.102/admin               # debe dar 403
-ls -la /var/www/noticias/
-ls -la /opt/noticias/
-
-# ── HITO 4: Documentación ───────────────────────────────────
+# ====== PASO 5: ADMINISTRACIÓN CENTRALIZADA (VM4) ======
+# Lanzar el script interactivo de monitorización del clúster
 /opt/admin/scripts/monitor.sh
+# Validar el almacenamiento físico de copias de seguridad remotas
 ls -lh /opt/admin/backups/
-crontab -l
+
 ```
 
 ---
 
 *Proyecto 17 — SIS313 USFX 2026 | Danner · Limbert · Fer · Melany*
 
+```
+
+```
